@@ -1,5 +1,4 @@
 { pkgs ? import <nixpkgs> {} }:
-
 pkgs.mkShell {
   packages = [
     pkgs.go_1_23
@@ -10,8 +9,8 @@ pkgs.mkShell {
     pkgs.gopkgs
     pkgs.gopls
     pkgs.gotools
-    pkgs.asciinema
-    pkgs.asciinema-agg
-    pkgs.ffmpeg
+    pkgs.sqlc
+    pkgs.sqlite
+    pkgs.hugo
   ];
 }

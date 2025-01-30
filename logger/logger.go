@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"runtime"
 	"time"
 )
 
@@ -47,10 +48,34 @@ func WithValue(ctx context.Context, key string, val any) context.Context {
 var infoLog = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 var errorLog = slog.New(slog.NewJSONHandler(os.Stderr, nil))
 
+func withStackInfo(ctx context.Context) context.Context {
+	pc, file, line, ok := runtime.Caller(2)
+	if !ok {
+		return ctx
+	}
+	fn := runtime.FuncForPC(pc)
+	ctx = WithValue(ctx, "func", fn.Name())
+	ctx = WithValue(ctx, "file", file)
+	ctx = WithValue(ctx, "line", line)
+	return ctx
+}
+
 func Infof(ctx context.Context, f string, args ...any) {
-	infoLog.LogAttrs(ctx, slog.LevelInfo, fmt.Sprintf(f, args...), extract(ctx)...)
+	ctx = withStackInfo(ctx)
+	infoLog.LogAttrs(
+		ctx,
+		slog.LevelInfo,
+		fmt.Sprintf(f, args...),
+		extract(ctx)...,
+	)
 }
 
 func Errorf(ctx context.Context, f string, args ...any) {
-	errorLog.LogAttrs(ctx, slog.LevelError, fmt.Sprintf(f, args...), extract(ctx)...)
+	ctx = withStackInfo(ctx)
+	errorLog.LogAttrs(
+		ctx,
+		slog.LevelError,
+		fmt.Sprintf(f, args...),
+		extract(ctx)...,
+	)
 }

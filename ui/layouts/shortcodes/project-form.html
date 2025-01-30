@@ -1,0 +1,22 @@
+{{ `{{ if .Recording }}` }}
+<form action="?action=stop" method="POST">
+    <fieldset>
+        <legend>In Progress</legend>
+
+        <div class="record-light"></div>
+        Recording... &quot;{{ `{{ .ProjectName }}` }}&quot;<br>
+        <label for="project_desc">Test Description:</label><br>
+        <textarea type="text" id="project_desc" name="project_desc" rows="5" cols="50" required></textarea><br>
+    </fieldset>
+    <button type="submit">Save Recording</button>
+</form>
+{{ `{{ else }}` }}
+<form action="?action=record" method="POST">
+    <fieldset>
+        <legend>New Project</legend>
+        <label for="project_name">Name:</label>
+        <input type="text" id="project_name" name="project_name" required><br>
+    </fieldset>
+    <button type="submit">Start Recording</button>
+</form>
+{{ `{{ end }}` }}

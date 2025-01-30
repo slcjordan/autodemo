@@ -1,16 +1,16 @@
-package manualqa
+package autodemo
 
 import "time"
 
-type TypingSegment struct {
-	LeadIn             time.Duration
-	LeadOut            time.Duration
-	KeypressMinLatency time.Duration
-	KeypressMaxLatency time.Duration
-	Input              []byte
+type History struct {
+	Index    int
+	Args     []string
+	Output   string
+	ExecTime time.Duration
 }
 
-type SoundFile struct {
-	Name     string
-	Duration time.Duration
+type Project struct {
+	Name       string
+	WorkingDir string
+	Desc       string
 }

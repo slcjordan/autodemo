@@ -1,2 +1,6 @@
 .DS_Store
+assets/recordings
 .envrc
+assets/sound-effects/typing.mp3
+mytest/
+projects/

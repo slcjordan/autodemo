@@ -1,0 +1,15 @@
+FROM golang:1.23 AS build
+
+COPY . /go/src/github.com/slcjordan/autodemo
+
+WORKDIR /go/src/github.com/slcjordan/autodemo
+
+RUN go build -o /go/bin/autodemo-worker ./cmd/worker
+
+FROM ubuntu:latest
+
+RUN apt update && apt install -y xvfb x11-utils xterm ffmpeg xdotool socat imagemagick
+
+COPY --from=build /go/bin/autodemo-worker /opt/autodemo/bin/autodemo-worker
+
+CMD ["/opt/autodemo/bin/autodemo-worker"]

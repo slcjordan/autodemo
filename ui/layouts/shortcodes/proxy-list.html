@@ -1,0 +1,10 @@
+<ul>
+{{ `{{ range $val := .Proxies }}` }}
+	<li>
+	{{ `{{ $val.ListenScheme }}` }}://{{ `{{ $val.ListenHost }}` }}:{{ `{{ $val.ListenPort }}` }}
+	&rarr;
+	{{ `{{ $val.ForwardScheme }}` }}://{{ `{{ $val.ForwardHost }}` }}:{{ `{{ $val.ForwardPort }}` }}
+	{{ `{{ if $val.ForwardInsecure }}` }} (insecure) {{ `{{ end }}` }}
+	</li>
+{{ `{{ end }}` }}
+</ul>
