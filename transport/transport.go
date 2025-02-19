@@ -2,6 +2,7 @@ package transport
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -60,6 +61,15 @@ func (c *Curl) findMatchingJar(cookies []*http.Cookie, u *url.URL) (int, bool) {
 	return 0, false
 }
 
+func maybePrettify(uglyJSON string) string {
+	var prettyJSON bytes.Buffer
+	err := json.Indent(&prettyJSON, []byte(uglyJSON), "", "  ")
+	if err != nil {
+		return uglyJSON
+	}
+	return prettyJSON.String()
+}
+
 func (c *Curl) CurlFromRequest(req *http.Request) autodemo.History {
 	var h autodemo.History
 	h.Args = append(h.Args, "curl")
@@ -85,7 +95,11 @@ func (c *Curl) CurlFromRequest(req *http.Request) autodemo.History {
 			bodyStr := string(body)
 			parts := strings.SplitN(bodyStr, "\r\n\r\n", 2)
 			if len(parts) > 1 {
-				h.Args = append(h.Args, "--data", fmt.Sprintf("'%s'", parts[1]))
+				if req.Header.Get("Content-Type") == "application/json" {
+					h.Args = append(h.Args, "--data", fmt.Sprintf("'%s'", maybePrettify(parts[1])))
+				} else {
+					h.Args = append(h.Args, "--data", fmt.Sprintf("'%s'", parts[1]))
+				}
 			}
 		}
 	}
@@ -142,7 +156,11 @@ func (c *Curl) curlResponseFormat(resp *http.Response) string {
 	if err != nil {
 		output.WriteString(fmt.Sprintf("Error reading body: %v\n", err))
 	} else {
-		output.WriteString(string(bodyBytes))
+		if resp.Header.Get("Content-Type") == "application/json" {
+			output.WriteString(maybePrettify(string(bodyBytes)))
+		} else {
+			output.WriteString(string(bodyBytes))
+		}
 	}
 
 	// Reset the response body so it can be read again if needed

@@ -100,7 +100,7 @@
 {{ range $val := .Projects }}
   &lt;li&gt;{{ $val.Name }}:
 	{{ if $val.Done }}
-		&lt;a href=&#34;http://localhost:11080/projects/{{ $val.Name }}/combined.webm&#34; &gt;video&lt;/a&gt;
+		&lt;a href=&#34;http://localhost:11080/projects/{{ $val.Name }}/combined-with-fade.webm&#34; &gt;video&lt;/a&gt;
 		&lt;a href=&#34;http://localhost:11080/projects/{{ $val.Name }}/combined.md&#34; &gt;markdown&lt;/a&gt;
 	{{ else if $val.Error }}
 		&lt;a href=&#34;http://localhost:11080/projects/{{ $val.Name }}/error.txt&#34; &gt;errors&lt;/a&gt;

@@ -2,7 +2,7 @@
 {{ `{{ range $val := .Projects }}` }}
   <li>{{ `{{ $val.Name }}` }}:
 	{{ `{{ if $val.Done }}` }}
-		{{ `<a href="/projects/{{ $val.Name }}/combined.webm" >video</a>` | safeHTML }}
+		{{ `<a href="/projects/{{ $val.Name }}/combined-with-fade.webm" >video</a>` | safeHTML }}
 		{{ `<a href="/projects/{{ $val.Name }}/combined.md" >markdown</a>` | safeHTML }}
 	{{ `{{ else if $val.Error }}` }}
 		{{ `<a href="/projects/{{ $val.Name }}/error.txt" >errors</a>` | safeHTML }}

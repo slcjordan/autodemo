@@ -139,7 +139,7 @@ func (m *Manager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			projects = append(projects, Project{
 				Name:  f.Name(),
 				Error: fileExists(r.Context(), projectDir, f.Name(), "error.txt"),
-				Done:  fileExists(r.Context(), projectDir, f.Name(), "combined.webm"),
+				Done:  fileExists(r.Context(), projectDir, f.Name(), "combined-with-fade.webm"),
 			})
 		}
 		var lastError string

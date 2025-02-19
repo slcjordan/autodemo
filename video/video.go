@@ -79,7 +79,7 @@ func NewWorker(ctx context.Context, conn *db.Conn, clicks *KeyboardClicks, disp 
 
 	before := ptyList(ctx)
 	// xterm := exec.CommandContext(ctx, "xterm", "-geometry", "80x24", "-fa", "'Monospace'", "-fs", "12", "-name", "autodemo")
-	xterm := exec.CommandContext(ctx, "xterm", "-geometry", "100x30", "-fa", "'Monospace'", "-fs", "12", "-name", "autodemo")
+	xterm := exec.CommandContext(ctx, "xterm", "-fa", "'Monospace'", "-fs", "12", "-name", "autodemo", "-maximized", "-bg", "black", "-fg", "white")
 	xterm.Stdout = Stdout
 	xterm.Stderr = Stderr
 	xterm.Env = env
@@ -182,6 +182,14 @@ func (w *Worker) concat(ctx context.Context, project autodemo.Project) error {
 			fmt.Fprintf(file, "\n")
 		}
 		fmt.Fprintf(file, "file '%s'", filepath.Join(project.WorkingDir, project.Name, input))
+		script, err := os.Open(filepath.Join(project.WorkingDir, project.Name, strings.Replace(descs[i], "desc-", "script-", 1)))
+		if err != nil {
+			fmt.Println(filepath.Join(project.WorkingDir, project.Name, descs[i]), err)
+			continue
+		}
+		io.Copy(md, script)
+		script.Close()
+		fmt.Fprintf(md, "\n\n")
 		src, err := os.Open(filepath.Join(project.WorkingDir, project.Name, descs[i]))
 		if err != nil {
 			fmt.Println(filepath.Join(project.WorkingDir, project.Name, descs[i]), err)
@@ -204,8 +212,64 @@ func (w *Worker) concat(ctx context.Context, project autodemo.Project) error {
 	ffmpeg.Stderr = Stderr
 	err = ffmpeg.Run()
 	if err != nil {
-		logger.Errorf(ctx, "could not save clicks: %s", err)
+		logger.Errorf(ctx, "could not concat output: %s", err)
+		return err
 	}
+
+	lengthen := exec.CommandContext(ctx, "ffmpeg")
+	lengthen.Args = append(lengthen.Args, "-i", filepath.Join(project.WorkingDir, project.Name, "combined.webm"))
+	lengthen.Args = append(lengthen.Args, "-vf", "tpad=stop_mode=clone:stop_duration=10")
+	lengthen.Args = append(lengthen.Args, "-c:v", "libvpx-vp9", "-c:a", "libopus")
+	lengthen.Args = append(lengthen.Args, "-y", filepath.Join(project.WorkingDir, project.Name, "combined-longer.webm"))
+	lengthen.Env = w.env
+	lengthen.Stdout = Stdout
+	lengthen.Stderr = Stderr
+	err = lengthen.Run()
+	if err != nil {
+		logger.Errorf(ctx, "could not concat output: %s", err)
+		return err
+	}
+
+	merge := exec.CommandContext(ctx, "ffmpeg")
+	merge.Args = append(lengthen.Args, "-i", filepath.Join(project.WorkingDir, project.Name, "combined-longer.webm"))
+	merge.Args = append(lengthen.Args, "-i", "/assets/music/vibing_over_venus.mp3")
+	merge.Args = append(merge.Args, "-filter_complex", "[0:a]volume=2.5[a1];[a1]apad=pad_dur=6[a1ext];[1:a]volume=0.1[a2];[a1ext][a2]amix=inputs=2:duration=shortest[aout]")
+	merge.Args = append(merge.Args, "-map", "0:v")
+	merge.Args = append(merge.Args, "-map", "[aout]")
+	merge.Args = append(merge.Args, "-c:v", "copy")
+	merge.Args = append(merge.Args, "-c:a", "libopus")
+	merge.Args = append(merge.Args, "-y", filepath.Join(project.WorkingDir, project.Name, "combined-with-music.webm"))
+	merge.Env = w.env
+	merge.Stdout = Stdout
+	merge.Stderr = Stderr
+	err = merge.Run()
+	if err != nil {
+		logger.Errorf(ctx, "could not add background music: %s", err)
+		return err
+	}
+
+	info, err := load(ctx, filepath.Join(project.WorkingDir, project.Name, "combined-with-music.webm"))
+	if err != nil {
+		logger.Errorf(ctx, "could not get file info: %s", err)
+		return err
+	}
+
+	// ffmpeg -i input.mp4 -filter_complex "[0:v]fade=t=out:st=END_TIME:d=3[vout];[0:a]afade=t=out:st=END_TIME:d=3[aout]" -map "[vout]" -map "[aout]" -c:v libx264 -c:a aac -b:a 192k -preset fast output.mp4
+	fade := exec.CommandContext(ctx, "ffmpeg")
+	fade.Args = append(fade.Args, "-i", filepath.Join(project.WorkingDir, project.Name, "combined-with-music.webm"))
+	startTime := int(info.duration.Seconds() - 3)
+	fade.Args = append(fade.Args, "-filter_complex", fmt.Sprintf("[0:v]fade=t=out:st=%d:d=3[vout];[0:a]afade=t=out:st=%d:d=3[aout]", startTime, startTime))
+	fade.Args = append(fade.Args, "-map", "[vout]")
+	fade.Args = append(fade.Args, "-map", "[aout]")
+	fade.Args = append(fade.Args, "-c:v", "libvpx-vp9", "-c:a", "libopus")
+	fade.Args = append(fade.Args, "-y", filepath.Join(project.WorkingDir, project.Name, "combined-with-fade.webm"))
+	fade.Stdout = Stdout
+	fade.Stderr = Stderr
+	err = fade.Run()
+	if err != nil {
+		logger.Errorf(ctx, "could not fade: %s", err)
+	}
+	fmt.Println(fade.String())
 	return err
 }
 
@@ -367,7 +431,16 @@ func (w *Worker) narrateClip(ctx context.Context, filename string, text string) 
 
 func (w *Worker) narrate(ctx context.Context, project autodemo.Project, parts []string) error {
 	for i := 0; i < len(parts); i++ {
-		err := w.narrateClip(
+		err := os.WriteFile(
+			filepath.Join(project.WorkingDir, project.Name, fmt.Sprintf("script-%03d.md", i)),
+			[]byte(parts[i]),
+			0644,
+		)
+		if err != nil {
+			return err
+		}
+
+		err = w.narrateClip(
 			ctx,
 			filepath.Join(project.WorkingDir, project.Name, fmt.Sprintf("narration-%03d.mp3", i)),
 			parts[i],
