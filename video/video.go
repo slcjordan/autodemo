@@ -233,7 +233,7 @@ func (w *Worker) concat(ctx context.Context, project autodemo.Project) error {
 	merge := exec.CommandContext(ctx, "ffmpeg")
 	merge.Args = append(lengthen.Args, "-i", filepath.Join(project.WorkingDir, project.Name, "combined-longer.webm"))
 	merge.Args = append(lengthen.Args, "-i", "/assets/music/vibing_over_venus.mp3")
-	merge.Args = append(merge.Args, "-filter_complex", "[0:a]volume=2.5[a1];[a1]apad=pad_dur=6[a1ext];[1:a]volume=0.1[a2];[a1ext][a2]amix=inputs=2:duration=shortest[aout]")
+	merge.Args = append(merge.Args, "-filter_complex", "[0:a]volume=2.5[a1];[a1]apad=pad_dur=6[a1ext];[1:a]volume=0.7[a2];[a1ext][a2]amix=inputs=2:duration=shortest[aout]")
 	merge.Args = append(merge.Args, "-map", "0:v")
 	merge.Args = append(merge.Args, "-map", "[aout]")
 	merge.Args = append(merge.Args, "-c:v", "copy")
@@ -476,7 +476,7 @@ func (w *Worker) askChatGPT(ctx context.Context, project autodemo.Project) ([]st
 	}
 	prompt.Write([]byte(fmt.Sprintf(`
 
-This is a test plan for a feature in the API. I need a script to narrate a training video for the QA engineers. The script should write all acronyms uppercase as it will be narrated by elevenlabs. Each curl request has its own clip. Please explain how each step fits into the overall test plan. Format the output as JSON with a clips array, where each clip has a name and narration field. The clips array must be length %d. Respond only with a valid JSON object. No text before or after.
+This is a test plan for a feature in the DigiCert One API. I need a script to narrate a training video for the QA engineers. The script should write all acronyms uppercase as it will be narrated by elevenlabs. Each curl request has its own clip. Please explain how each step fits into the overall test plan. Format the output as JSON with a clips array, where each clip has a name and narration field. The clips array must be length %d. Respond only with a valid JSON object. No text before or after.
 `, len(filenames))))
 	body := strings.NewReader(fmt.Sprintf(`
 {
