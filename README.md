@@ -1,6 +1,6 @@
 # Autodemo
 
-Autodemo is a tool for generating video demos of curl commands automatically. It is currently in an early stage of development and may contain bugs.
+Autodemo is a tool for generating video demos of curl commands automatically. This is a throwaway iteration and contains bugs.
 
 ## Getting Started
 
